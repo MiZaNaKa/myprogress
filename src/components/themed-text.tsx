@@ -1,17 +1,66 @@
-import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
+import { Children } from "react";
+import {
+    Platform,
+    StyleSheet,
+    Text,
+    type TextProps,
+    type TextStyle,
+} from "react-native";
 
-import { Fonts, ThemeColor } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { Fonts, ThemeColor } from "@/constants/theme";
+import { useLanguage } from "@/context/LanguageProvider";
+import { useTheme } from "@/hooks/use-theme";
 
 export type ThemedTextProps = TextProps & {
-  type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'code';
+  type?:
+    | "default"
+    | "title"
+    | "small"
+    | "smallBold"
+    | "subtitle"
+    | "link"
+    | "linkPrimary"
+    | "code";
   themeColor?: ThemeColor;
+  translate?: boolean;
 };
 
-export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
-  const theme = useTheme();
+const FONT_SCALE = 0.94;
 
-  return <Text style={[{ color: theme[themeColor ?? 'text'] }, styles[type], style]} {...rest} />;
+export function ThemedText({
+  children,
+  style,
+  type = "default",
+  themeColor,
+  translate = true,
+  ...rest
+}: ThemedTextProps) {
+  const theme = useTheme();
+  const { t } = useLanguage();
+  const resolvedStyle: TextStyle =
+    StyleSheet.flatten([styles[type], style]) ?? {};
+  const scaledStyle = {
+    ...resolvedStyle,
+    fontSize:
+      typeof resolvedStyle.fontSize === "number"
+        ? Math.round(resolvedStyle.fontSize * FONT_SCALE)
+        : resolvedStyle.fontSize,
+    lineHeight:
+      typeof resolvedStyle.lineHeight === "number"
+        ? Math.round(resolvedStyle.lineHeight * FONT_SCALE)
+        : resolvedStyle.lineHeight,
+  };
+
+  return (
+    <Text
+      style={[{ color: theme[themeColor ?? "text"] }, scaledStyle]}
+      {...rest}
+    >
+      {Children.map(children, (child) =>
+        translate && typeof child === "string" ? t(child) : child,
+      )}
+    </Text>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -47,7 +96,7 @@ const styles = StyleSheet.create({
   linkPrimary: {
     lineHeight: 30,
     fontSize: 14,
-    color: '#3c87f7',
+    color: "#3c87f7",
   },
   code: {
     fontFamily: Fonts.mono,
